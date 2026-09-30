@@ -1,0 +1,44 @@
+Outlook Multi-Monitor 4.1 - Large Import / 20K Account Update
+============================================================
+- Added .txt file import with one Outlook account per line.
+- .txt import supports all six existing delimiter/field-order formats.
+- Large imports are written to SQLite in 1,000-row batches inside one transaction.
+- Dashboard now uses server-side pagination (50/100/250/500 rows per page).
+- Added account search by email or note.
+- Error panel renders at most 200 rows while retaining the full error count.
+- Added SQLite busy timeout/index tuning for larger account collections.
+- Polling now keeps only a bounded number of tasks in flight instead of creating
+  one Future for every account at once.
+- Poll queries load only credential fields needed by the worker.
+- Fixed Poll All / Re-poll Errors so they clear a previous stop request first.
+
+Outlook Multi-Monitor - New List Compatibility Rebuild
+
+Changes:
+- Accepts both:
+    email|password|client_id|refresh_token
+    email|password|refresh_token|client_id
+- Auto-detects the GUID/UUID client_id field.
+- Rejects malformed/ambiguous rows with line-number errors.
+- Repairs previously stored accounts whose client_id and refresh_token were swapped.
+- Normalizes Markdown-escaped email addresses such as user\@outlook.com.
+- Keeps OAuth exchange and Graph mailbox fetch behavior otherwise unchanged.
+- Safely JSON-escapes copied email/password values in the dashboard JavaScript.
+
+Security note:
+The application still stores account passwords and OAuth refresh tokens locally in
+SQLite because that is how the original application was designed. Keep the folder
+private and do not share monitor.db, exported account files, or screenshots that
+contain credentials.
+- Uses only each account's supplied client_id during token exchange; removed unrelated client-ID guessing.
+- A successfully fetched mailbox with zero Inbox/Junk messages is now considered healthy instead of fetch_error.
+- If Microsoft rotates the refresh token, retries immediately use the rotated token.
+
+2026-09-24
+- Added "Export Original Format" dropdown on the main page.
+- Supports email|password|client_id|refresh_token and email|password|refresh_token|client_id.
+- Exports all current accounts in original account order as a plain .txt file.
+- Added import/export support for four-dash (----) and colon (:) account formats.
+- Import now auto-detects |, ----, and : delimiters, plus either OAuth field order.
+- The Export Original Format dropdown now provides all six supported four-field layouts.
+
