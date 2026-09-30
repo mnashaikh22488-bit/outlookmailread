@@ -44,15 +44,22 @@ except ImportError:
 
 
 # ====================== CONFIG ======================
-HOST = "127.0.0.1"
-PORT = 5000
+
+# Render / production hosting:
+# Use 0.0.0.0 so the service is reachable from outside the container.
+HOST = "0.0.0.0"
+
+# Render provides PORT through an environment variable.
+# 10000 is used when running locally without PORT configured.
+PORT = int(os.environ.get("PORT", 10000))
+
 DB_PATH = Path(__file__).parent / "monitor.db"
 PROXIES_FILE = Path(__file__).parent / "proxies.txt"
 SETTINGS_FILE = Path(__file__).parent / "settings.json"
 
 POLL_INTERVAL_MINUTES = 30
 MAX_EMAILS_PER_ACCOUNT = 100
-REQUEST_TIMEOUT = 15  # per network call – keep under the 20s account timeout
+REQUEST_TIMEOUT = 15
 DEFAULT_MAX_WORKERS = 15
 
 TOKEN_URL_V2 = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
@@ -61,9 +68,15 @@ GRAPH = "https://graph.microsoft.com/v1.0"
 IMAP_HOST = "outlook.office365.com"
 
 app = Flask(__name__)
-app.secret_key = "local-outlook-monitor-pro-2026"
-# Large .txt imports are supported, while still preventing accidental giant uploads.
-app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024  # 128 MB
+
+# IMPORTANT:
+# For production, set SECRET_KEY as a Render environment variable.
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "local-development-secret-change-this"
+)
+
+app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
 
 poller_state = {
     "running": False,
@@ -74,7 +87,6 @@ poller_state = {
     "processed": 0,
     "total": 0,
 }
-
 
 # ====================== SETTINGS & PROXIES ======================
 def load_settings():
@@ -1594,16 +1606,26 @@ def api_status():
 
 
 # ====================== MAIN ======================
+
 if __name__ == "__main__":
     init_db()
+
     print("\n" + "=" * 60)
     print("  Outlook Multi-Monitor  •  Professional Edition")
     print("=" * 60)
-    print(f"  Open →  http://127.0.0.1:{PORT}")
+    print(f"  Host →  {HOST}")
+    print(f"  Port →  {PORT}")
     print("=" * 60 + "\n")
 
-    # Do NOT auto-start polling. User must click "Start Auto" or "Poll All Now".
+    # Do NOT auto-start polling.
+    # User must click "Start Auto" or "Poll All Now".
     poller_state["stop_requested"] = True
     poller_state["running"] = False
     poller_state["progress"] = "Idle – click Poll All Now or Start Auto"
-    app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
+
+    app.run(
+        host=HOST,
+        port=PORT,
+        debug=False,
+        use_reloader=False
+    )
